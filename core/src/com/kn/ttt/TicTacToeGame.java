@@ -298,7 +298,7 @@ public class TicTacToeGame extends ApplicationAdapter implements InputProcessor 
 		explosionHappening = true;
 
 		processMove();
-//        resetIfOver();
+        resetIfOver();
 
 		return true;
 	}
