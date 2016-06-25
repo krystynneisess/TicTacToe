@@ -2,17 +2,29 @@ package com.kn.ttt;
 
 import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.InputAdapter;
+import com.badlogic.gdx.InputMultiplexer;
 import com.badlogic.gdx.InputProcessor;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
+import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Animation;
+import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
+import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.math.Vector3;
+import com.badlogic.gdx.scenes.scene2d.Actor;
+import com.badlogic.gdx.scenes.scene2d.Stage;
+import com.badlogic.gdx.scenes.scene2d.ui.Skin;
+import com.badlogic.gdx.scenes.scene2d.ui.Table;
+import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
+import com.badlogic.gdx.scenes.scene2d.utils.ChangeListener;
+import com.sun.org.apache.bcel.internal.generic.FRETURN;
 // import com.sun.xml.internal.bind.annotation.OverrideAnnotationOf;
 import java.lang.Math;
 import java.util.ArrayList;
@@ -44,10 +56,10 @@ public class TicTacToeGame extends ApplicationAdapter implements InputProcessor 
 	ShapeRenderer sr;
 
 	// Useful size params
-	float w;
-	float h;
-	float s;
-	float lw;
+	float w; // screen width
+	float h; // screen height
+	float s; // board side length
+	float lw; // board line width
 
 	float boardLeftEdge;  // in world coordinates
 	float boardRightEdge;
@@ -60,6 +72,16 @@ public class TicTacToeGame extends ApplicationAdapter implements InputProcessor 
 	float touchCoordinateX;
 	float touchCoordinateY;
 
+	Stage stage;
+//	Table table;
+	Skin skin;
+	TextButton resetButton;
+	TextButton.TextButtonStyle textButtonStyle;
+
+	// Fonts
+	BitmapFont font;
+
+
 	// Game state
 	TicTacToe gameState;
 
@@ -69,14 +91,46 @@ public class TicTacToeGame extends ApplicationAdapter implements InputProcessor 
 //		Gdx.app.log(TAG_DEBUG, "calling create()");
 		batch = new SpriteBatch();
 		img = new Texture("badlogic.jpg");
-		touchPoint = new Vector3();
 		explosionSheet = new Texture(Gdx.files.internal("explosion.png"));
+		touchPoint = new Vector3();
 		sr = new ShapeRenderer();
 		gameState = new TicTacToe();
 
         prepareAnimation();
+		prepareButtons();
         calculateUsefulNumbers();
-        Gdx.input.setInputProcessor(this);
+
+//        Gdx.input.setInputProcessor(this);
+//        Gdx.input.setInputProcessor(stage);
+
+        InputMultiplexer multiplexer = new InputMultiplexer();
+        multiplexer.addProcessor(stage);
+        multiplexer.addProcessor(this);
+//        multiplexer.addProcessor(new InputAdapter() {
+//            @Override
+//            public boolean touchDown(int x, int y, int pointer, int button) {
+//                Gdx.app.log(TAG_DEBUG, "BUTTON INT P1:  " + Integer.toString(button));
+//                return true;
+//            }
+//        });
+//        multiplexer.addProcessor(new InputAdapter() {
+//            @Override
+//            public boolean touchDown(int x, int y, int pointer, int button) {
+//                Gdx.app.log(TAG_DEBUG, "BUTTON INT P2:  " + Integer.toString(button));
+//
+////                touchCoordinateX = x;
+////                touchCoordinateY = y;
+////                camera.unproject(touchPoint.set(touchCoordinateX, touchCoordinateY, 0f));
+////
+////                stateTime = 0;
+////                explosionHappening = true;
+////
+////                processMove();
+//
+//                return false;
+//            }
+//        });
+        Gdx.input.setInputProcessor(multiplexer);
 	}
 
 	@Override
@@ -91,26 +145,10 @@ public class TicTacToeGame extends ApplicationAdapter implements InputProcessor 
 		batch.end();
 
 		// Render tic-tac-toe board
-
 		drawBoard();
 
-//		ArrayList<Vector2> EXs = new ArrayList<Vector2>();
-//		EXs.add(new Vector2(0f, 0f));
-//		EXs.add(new Vector2(1f, 1f));
-//		EXs.add(new Vector2(2f, 2f));
-//
-//		ArrayList<Vector2> OHs = new ArrayList<Vector2>();
-//		OHs.add(new Vector2(0f, 1f));
-//		OHs.add(new Vector2(0f, 2f));
-//		OHs.add(new Vector2(2f, 1f));
-//
-//		for (Vector2 ex:EXs) {
-//			drawXPiece(w, h, s, lineWidth, ex);
-//		}
-//
-//		for (Vector2 oh:OHs) {
-//			drawOPiece(w, h, s, lineWidth, oh);
-//		}
+		// Render stage
+		stage.draw();
 
 		// Render explosion animation
 		stateTime += Gdx.graphics.getDeltaTime();
@@ -125,7 +163,23 @@ public class TicTacToeGame extends ApplicationAdapter implements InputProcessor 
 		}
 	}
 
+	@Override
+	public void resize (int width, int height) {
+		stage.getViewport().update(width, height, true);
+//		camera.update();
+	}
 
+	@Override
+	public void dispose() {
+		stage.dispose();
+		skin.dispose();
+	}
+
+
+
+////////////////////////////////////////////////////////////
+// INITIALIZATION HELPERS //////////////////////////////////
+////////////////////////////////////////////////////////////
 	public void calculateUsefulNumbers() {
 		w = camera.viewportWidth;
 		h = camera.viewportHeight;
@@ -164,6 +218,52 @@ public class TicTacToeGame extends ApplicationAdapter implements InputProcessor 
 //		Gdx.app.log(TAG_RENDER, "camera.viewport<Width,Height>():  (" + Float.toString(camera.viewportWidth) + ", " + Float.toString(camera.viewportHeight) + ")");
 	}
 
+	public void prepareButtons() {
+		stage = new Stage();
+
+//		table = new Table();
+//		table.setBounds(0f, 0f, w, h);
+
+		skin = new Skin();
+		Pixmap pixmap = new Pixmap(500, 150, Pixmap.Format.RGBA8888);
+		pixmap.setColor(Color.WHITE);
+		pixmap.fill();
+		font = generateBitmapFont(60);
+		skin.add("white", new Texture(pixmap));
+		skin.add("defaultFont", font);
+
+		textButtonStyle = new TextButton.TextButtonStyle();
+		textButtonStyle.up = skin.newDrawable("white", Color.BLACK);
+		textButtonStyle.down = skin.newDrawable("white", Color.DARK_GRAY);
+		textButtonStyle.font = skin.getFont("defaultFont");
+		skin.add("default", textButtonStyle);
+
+		resetButton = new TextButton("Reset Game", skin);
+		int scW = Gdx.graphics.getWidth();
+		int scH = Gdx.graphics.getHeight();
+		float rbW = resetButton.getWidth();
+		float rbH = resetButton.getHeight();
+		resetButton.setPosition(scW/2-rbW/2, scH/4-rbH/2);
+//		Gdx.app.log(TAG_DEBUG, Float.toString(w));
+//        Gdx.app.log(TAG_DEBUG, Float.toString(h));
+//		resetButton.setPosition(200, 200);
+
+		stage.addActor(resetButton);
+
+		resetButton.addListener(new ChangeListener() {
+			@Override
+			public void changed(ChangeEvent event, Actor actor) {
+				gameState.resetGame();
+				Gdx.app.log(TAG_DEBUG, "Game reset!");
+			}
+		});
+	}
+
+
+
+////////////////////////////////////////////////////////////
+// DRAWING HELPERS /////////////////////////////////////////
+////////////////////////////////////////////////////////////
 
 	// Board drawing convenience methods
 	// w = camera width; h = camera height; s = board side length;
@@ -229,6 +329,26 @@ public class TicTacToeGame extends ApplicationAdapter implements InputProcessor 
 		sr.end();
 	}
 
+	public BitmapFont generateBitmapFont(int size) {
+		FreeTypeFontGenerator generator = new FreeTypeFontGenerator(Gdx.files.internal
+				("fonts/hetilica.ttf"));
+		FreeTypeFontGenerator.FreeTypeFontParameter parameter = new FreeTypeFontGenerator
+				.FreeTypeFontParameter();
+		parameter.size = size;
+
+		BitmapFont font = generator.generateFont(parameter);
+		generator.dispose();
+
+		return font;
+	}
+
+
+
+
+////////////////////////////////////////////////////////////
+// GAME LOGIC HELPERS //////////////////////////////////////
+////////////////////////////////////////////////////////////
+
 	// Input to Game Logic translation
 	public boolean processMove() {
 		if (touchPoint.x > boardRightEdge || touchPoint.x < boardLeftEdge ||
@@ -272,6 +392,13 @@ public class TicTacToeGame extends ApplicationAdapter implements InputProcessor 
     }
 
 
+
+
+
+
+////////////////////////////////////////////////////////////
+// INPUT LISTENERS /////////////////////////////////////////
+////////////////////////////////////////////////////////////
 	// Input Processor overridden methods
 	@Override
 	public boolean keyDown(int keycode) {
@@ -298,7 +425,7 @@ public class TicTacToeGame extends ApplicationAdapter implements InputProcessor 
 		explosionHappening = true;
 
 		processMove();
-        resetIfOver();
+//        resetIfOver();
 
 		return true;
 	}
