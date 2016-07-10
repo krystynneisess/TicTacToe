@@ -2,5 +2,8 @@
 <resources>
 
     <string name="app_name">TicTacToe</string>
+    <string name="title_activity_main_menu">MainMenuActivity</string>
+    <string name="menu_title">Tic Tac Toe</string>
+    <string name="button_start_game">Start Game</string>
 
 </resources>

@@ -29,12 +29,25 @@ import com.sun.org.apache.bcel.internal.generic.FRETURN;
 import java.lang.Math;
 import java.util.ArrayList;
 
+
 public class TicTacToeGame extends ApplicationAdapter implements InputProcessor {
 	public static final int FRAME_COLS = 5;
-	public static final int FRAME_ROWS = 3;
 
+	public static final int FRAME_ROWS = 3;
 	public static final String TAG_DEBUG = "TAG_DEBUG";
+
 	public static final String TAG_RENDER = "TAG_RENDER";
+
+	// Callbacks
+	public interface MyGameCallback {
+		public void onStartMainMenuActivity();
+	}
+
+	private static MyGameCallback myGameCallback;
+
+	public void setMyGameCallback(MyGameCallback callback) {
+		myGameCallback = callback;
+	}
 
 	// Batch
 	SpriteBatch batch;
@@ -76,6 +89,7 @@ public class TicTacToeGame extends ApplicationAdapter implements InputProcessor 
 //	Table table;
 	Skin skin;
 	TextButton resetButton;
+	TextButton menuButton;
 	TextButton.TextButtonStyle textButtonStyle;
 
 	// Fonts
@@ -84,7 +98,6 @@ public class TicTacToeGame extends ApplicationAdapter implements InputProcessor 
 
 	// Game state
 	TicTacToe gameState;
-
 
 	@Override
 	public void create () {
@@ -224,10 +237,12 @@ public class TicTacToeGame extends ApplicationAdapter implements InputProcessor 
 //		table = new Table();
 //		table.setBounds(0f, 0f, w, h);
 
+        // Skin #1
 		skin = new Skin();
 		Pixmap pixmap = new Pixmap(500, 150, Pixmap.Format.RGBA8888);
-		pixmap.setColor(Color.WHITE);
-		pixmap.fill();
+        pixmap.setColor(Color.WHITE);
+        pixmap.fill();
+
 		font = generateBitmapFont(60);
 		skin.add("white", new Texture(pixmap));
 		skin.add("defaultFont", font);
@@ -236,14 +251,33 @@ public class TicTacToeGame extends ApplicationAdapter implements InputProcessor 
 		textButtonStyle.up = skin.newDrawable("white", Color.BLACK);
 		textButtonStyle.down = skin.newDrawable("white", Color.DARK_GRAY);
 		textButtonStyle.font = skin.getFont("defaultFont");
-		skin.add("default", textButtonStyle);
 
+        skin.add("default", textButtonStyle);
+
+        // Skin #2
+//        Skin skin2 = skin;
+//
+//        Pixmap pixmapLa = new Pixmap(1000, 150, Pixmap.Format.RGBA8888);
+//        pixmapLa.setColor(Color.WHITE);
+//        pixmapLa.fill();
+//
+//        TextButton.TextButtonStyle textButtonStyle2 = new TextButton.TextButtonStyle();
+//        textButtonStyle2.up = skin.newDrawable("white", Color.BLACK);
+//        textButtonStyle2.down = skin.newDrawable("white", Color.DARK_GRAY);
+//        textButtonStyle2.font = skin.getFont("defaultFont");
+//
+//        skin2.add("default", textButtonStyle2);
+
+
+		// RESET BUTTON
 		resetButton = new TextButton("Reset Game", skin);
 		int scW = Gdx.graphics.getWidth();
 		int scH = Gdx.graphics.getHeight();
 		float rbW = resetButton.getWidth();
 		float rbH = resetButton.getHeight();
-		resetButton.setPosition(scW/2-rbW/2, scH/4-rbH/2);
+		float rbX = scW/2-rbW/2;
+		float rbY = scH/4-rbH/2;
+		resetButton.setPosition(rbX, rbY);
 //		Gdx.app.log(TAG_DEBUG, Float.toString(w));
 //        Gdx.app.log(TAG_DEBUG, Float.toString(h));
 //		resetButton.setPosition(200, 200);
@@ -254,9 +288,31 @@ public class TicTacToeGame extends ApplicationAdapter implements InputProcessor 
 			@Override
 			public void changed(ChangeEvent event, Actor actor) {
 				gameState.resetGame();
-				Gdx.app.log(TAG_DEBUG, "Game reset!");
+                Gdx.app.log(TAG_DEBUG, "Game reset!");
+            }
+		});
+
+		// MENU BUTTON
+		menuButton = new TextButton("Return to Main Menu", skin);
+		float mbW = menuButton.getWidth();
+		float mbH = menuButton.getWidth();
+		float mbX = scW/2-mbW/2;
+		float mbY = scH/5-mbH/2;
+//		menuButton.setPosition(mbX, mbY);
+		menuButton.setPosition(mbX, mbY);
+//        menuButton.pad(10f);
+
+		stage.addActor(menuButton);
+
+		menuButton.addListener(new ChangeListener() {
+			@Override
+			public void changed(ChangeEvent event, Actor actor) {
+				myGameCallback.onStartMainMenuActivity();
+                Gdx.app.log(TAG_DEBUG, "Switched to Main Menu!");
 			}
 		});
+
+
 	}
 
 
